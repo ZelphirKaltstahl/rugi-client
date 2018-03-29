@@ -1,0 +1,33 @@
+{
+    "name": "rugi-client",
+    "version": "0.1.0",
+    "description": "This is a web client and Shogi UI using the Rugi microservice for move validation.",
+    "main": "lib/index.js",
+    "files": [
+        "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
+        "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+    ],
+    "scripts": {
+        "build": "npm run clean && tsc",
+        "clean": "rimraf lib && rimraf example/dist && rimraf example/lib",
+        "docs": "echo \"Error: no documentation tool specified\" && exit 1",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "prepublish": "npm run build"
+    },
+    "keywords": [
+        "shogi",
+        "client",
+        "UI"
+    ],
+    "author": "Zelphir Kaltstahl",
+    "license": "GPL-3.0",
+    "dependencies": {
+        "@phosphor/widgets": "^1.5.0",
+        "@phosphor/datagrid": "^0.1.5"
+    },
+    "devDependencies": {
+        "css-loader": "^0.28.10",
+        "typescript": "^2.8",
+        "rimraf": "^2.6.2"
+    }
+}
