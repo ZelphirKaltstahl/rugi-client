@@ -90,90 +90,69 @@ namespace ShogiBoardModel {
             return sfen.split(" ")[hands_field_index];
         }
 
-        function get_next_token(remaining: string): string {
-            const acceptable_tokens_regexes = [
-                    /^[1-9][0-9]*/,
-                    /^[plnsgbrkPLNSGBRK]/,
-                    /^[+][pPlLnNsSbBrR]/
+        function tokenize_hand_part(remaining: string): string {
+            function regex_prio_sorter(regex1, regex2): boolean {
+                return elem1[1] > elem2[1];
+            }
+            // regexes with priority / precedence
+            const tokens_regexes: [RegExp, number] = [
+                [/^[1-9][0-9]*[plnsgbrkPLNSGBRK]/, 3],
+                [/^[+][pPlLnNsSbBrR]/, 2]
+                [/^[plnsgbrkPLNSGBRK]/, 1]
             ];
-            for (let token_regex of acceptable_tokens_regexes) {
+
+            let tokens = string[];
+            for (let token_regex of tokens_regexes.sort(regex_prio_sorter)) {
                 let res: string[] = token_regex.exec(remaining);
-                if (res) {
-                    return res[0];
+                if (res && res.length > 0) {
+                    return tokens.push(res[0]);
                 }
             }
-            throw new Error("SFEN hands part is not valid");
+            return tokens;
         }
 
-        function cut_prefix(str: string, prefix: string): string {
-            return str.slice(prefix.length);
+        function split_amount_and_type_token(token: string) {
+            // for example 10p
+            const number_regex = /[1-9][0-9]*/;
+            let num_res = number_regex.exec(token);
+            if (num_res && num_res.length > 0) {
+                return [num_res, token.slice(num_res.length)];
+            }
+            throw new Error("Token of SFEN hands part is not valid");
         }
-
-        function handle_sente_piece_case(token: string, sente_hand: ShogiPiece[]): ShogiPiece[] {
-            sente_hand.push(new ShogiPiece(string_to_piece_kind_map.get(token),
-                                           Player.Sente));
-            return sente_hand;
-        }
-
-        function handle_gote_piece_case(token: string, sente_hand: ShogiPiece[]): ShogiPiece[] {
-            gote_hand.push(new ShogiPiece(string_to_piece_kind_map.get(token),
-                                          Player.Gote));
-            return gote_hand;
-        }
-
-        function handle_number_case() {}
 
         // initialize some stuff
-        let remaining_hands_part = extract_hands_part(sfen);
+        const string_to_piece_kind_map = ShogiPiece.get_string_to_piece_kind_map();
+        let hand_tokens: string[] = tokenize_hand_part(extract_hands_part(sfen));
         let sente_hand: ShogiPiece[] = [];
         let gote_hand: ShogiPiece[] = [];
-        const string_to_piece_kind_map = ShogiPiece.get_string_to_piece_kind_map();
 
-        // iterate over the whole hand part
-        while (remaining_hands_part.length > 0) {
-            let next_token = get_next_token(remaining_hands_part);
-
-            if (ShogiPiece.is_sente_piece_string(next_token)) {
-                sente_hand = handle_sente_piece_case(next_token, sente_hand);
-                remaining_hands_part = cut_prefix(remaining_hands_part, next_token);
-
-            } else if (ShogiPiece.is_gote_piece_string(next_token)) {
-                gote_hand = handle_gote_piece_case(next_token, gote_hand);
-                remaining_hands_part = cut_prefix(remaining_hands_part, next_token);
-
-            } else if (Utils.string_is_integer(next_token)) {
-                let number_of_pieces: number = parseInt(next_token);
-                // cut by count of piece
-                remaining_hands_part = cut_prefix(remaining_hands_part, next_token);
-                next_token = get_next_token(remaining_hands_part);
-
-                // add as many pieces as the number indicated
-                for (let counter = 0; counter < number_of_pieces; counter++) {
-                    if (ShogiPiece.is_sente_piece_string(next_token)) {
-                        // to sente hand
-                        sente_hand = handle_sente_piece_case(next_token, sente_hand);
-
-                    } else if (ShogiPiece.is_gote_piece_string(next_token)) {
-                        // to gote hand
-                        gote_hand = handle_gote_piece_case(next_token, gote_hand);
-
-                    } else {
-                        // if the character after the number is not a character representing a piece,
-                        // the SFEN is not valid
-                        throw new Error("SFEN hands part is not valid");
+        hand_tokens.forEach((token: string) => {
+            if (ShogiPiece.is_sente_piece_string(token)) {
+                sente_hand.push(new ShogiPiece(string_to_piece_kind_map.get(token),
+                                               Player.Sente));
+            } else if (ShogiPiece.is_gote_piece_string(token)) {
+                gote_hand.push(new ShogiPiece(string_to_piece_kind_map.get(token),
+                                              Player.Gote));
+            } else if (Utils.string_is_integer(token[0])) {
+                [amount, piece_type_char] = split_amount_and_type_token(token);
+                if (ShogiPiece.is_sente_piece_string(token)) {
+                    for (let counter = 0; counter < amount; counter++) {
+                        sente_hand.push(new ShogiPiece(string_to_piece_kind_map.get(piece_type_char),
+                                                       Player.Sente));
                     }
+                } else if (ShogiPiece.is_gote_piece_string(token)) {
+                    for (let counter = 0; counter < amount; counter++) {
+                        gote_hand.push(new ShogiPiece(string_to_piece_kind_map.get(piece_type_char),
+                                                      Player.Gote));
+                    }
+                } else {
+                    throw new Error("Token of SFEN hands part is not valid");
                 }
-                // cut by piece
-                remaining_hands_part = cut_prefix(remaining_hands_part, next_token);
             } else {
-                // if the character is not indicating:
-                // an amount of pieces,
-                // a sente piece,
-                // of a gote piece,
-                // the SFEN is not valid
                 throw new Error("SFEN hands part is not valid");
             }
-        }
+        });
         return {sente: {pieces: sente_hand},
                 gote: {pieces: gote_hand}};
     }
