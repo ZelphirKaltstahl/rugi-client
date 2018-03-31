@@ -8,11 +8,14 @@
         "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
     ],
     "scripts": {
-        "build": "npm run clean && tsc",
-        "clean": "rimraf lib && rimraf example/dist && rimraf example/lib",
-        "docs": "echo \"Error: no documentation tool specified\" && exit 1",
+        "clean": "rimraf lib && rimraf web/dist && rimraf example/lib",
         "test": "echo \"Error: no test specified\" && exit 1",
-        "prepublish": "npm run build"
+        "prepublish": "npm run build",
+        "build": "npm run clean && tsc",
+        "build:web": "npm run build && cd web && webpack",
+        "docs": "typedoc src --out docs",
+        "watch": "npm run clean && tsc --watch",
+        "watch:web": "npm run build && cd web && webpack --watch"
     },
     "keywords": [
         "shogi",
@@ -21,13 +24,20 @@
     ],
     "author": "Zelphir Kaltstahl",
     "license": "GPL-3.0",
+    "repository": "git@github.com:ZelphirKaltstahl/rugi-client.git",
     "dependencies": {
         "@phosphor/widgets": "^1.5.0",
-        "@phosphor/datagrid": "^0.1.5"
+        "@phosphor/datagrid": "^0.1.5",
+        "@phosphor/messaging": "^1.2.2"
     },
     "devDependencies": {
+        "typedoc": "^0.11.1",
         "css-loader": "^0.28.10",
         "typescript": "^2.8",
-        "rimraf": "^2.6.2"
+        "rimraf": "^2.6.2",
+        "file-loader": "^0.11.1",
+        "rimraf": "^2.5.2",
+        "style-loader": "^0.13.1",
+        "webpack": "^4.4.1"
     }
 }
